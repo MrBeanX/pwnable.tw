@@ -1,4 +1,3 @@
-#!/bin/bash
 # coding = utf-8
 # author = Mr.BeanX
 # date = 2018-5-27
