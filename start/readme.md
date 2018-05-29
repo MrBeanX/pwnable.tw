@@ -2,9 +2,9 @@
 ## nc
 > nc chall.pwnable.tw 10000
 
-首先执行一下可执行程序发现输出 Let's start the CTF:
+首先执行一下可执行程序发现输出 Let's start the CTF:
 
-之后等待用户输入，后退出程序
+之后等待用户输入，然后退出程序
 
 拖入ida分析程序
 ```
@@ -36,19 +36,19 @@
 .text:0804809C     _start          endp
 
 ```
-于是逻辑很清晰，就是先执行sys_write(1,"Let's start the CTF:",20)
+于是逻辑很清晰，就是先执行sys_write(1,"Let's start the CTF:",20)
 
 后执行sys_read(0,&ecx,20)
 
-即先向标准输出写入20字节字符
+即先向标准输出写入20字节字符
 
-然后从标准输入读取20字节
+然后从标准输入读取20字节
 
-由于在mac中无法调试ELF程序于是我用了skysider/pwndocker
+由于在mac中无法调试ELF程序于是我用了skysider/pwndocker
 
 > docker pull skysider/pwndocker
 
-> docker run -it skysider/pwndocker
+> docker run -it skysider/pwndocker
 
 首先checksec
 ```
@@ -65,18 +65,18 @@ root@571503229c76:/proc/sys# cat /proc/sys/kernel/randomize_va_space
 2
 ```
 
-执行echo 0 /proc/sys/kernel/randomize_va_space会报错
+执行echo 0 /proc/sys/kernel/randomize_va_space会报错
 
 gdb调试start也会出现异常导致程序运行起来但是无法停止调试的情况
 
-这时需要在docker run时加入选项 --cap-add=SYS_PTRACE --security-opt seccomp=unconfined 
-重新启用docker发现可以正常调试了
+这时需要在docker run时加入选项 --cap-add=SYS_PTRACE --security-opt seccomp=unconfined
+重新启用docker发现可以正常调试了
 
 分析代码已经可以知道这是一个栈溢出漏洞，栈空间大小为20。但我们还是可以通过脚本跑一下
 
 并且由于0x08048087 mov ecx,esp可以导致栈基址泄露
 
-而我们程序没有任何保护，因此可以写入shellcode，控制EIP指向shellcode从而执行任意代码。
+而我们程序没有任何保护，因此可以写入shellcode，控制EIP指向shellcode从而执行任意代码。
 
 >pattern.py
 
@@ -152,7 +152,7 @@ root@571503229c76:~/pwn/pwnable.tw/start# python pattern.py offset 0x37614136
 hex pattern decoded as: 6Aa7
 20
 ```
-那么攻击思路就很明确了，利用栈可执行向栈中写入shellcode，然后通过mov ecx,esp泄露栈地址，然后sys_write会将esp输出，再将shell写入栈空间中，构造返回地址为esp+0x14，将shellcode写入esp+0x14内存中，即可完成pwn
+那么攻击思路就很明确了，利用栈可执行向栈中写入shellcode，然后通过mov ecx,esp泄露栈地址，然后sys_write会将esp输出，再将shell写入栈空间中，构造返回地址为esp+0x14，将shellcode写入esp+0x14内存中，即可完成pwn
 
 攻击脚本如下：
 ```python
